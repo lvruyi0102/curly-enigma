@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>家庭拓扑：爱的吞噬与成长</title>
+    <style>
+        :root {
+            --bg-color: #001f3f;
+            --player-color: #ff69b4; /* 妈妈 */
+            --dad-color: #00bfff; /* 爸爸 */
+            --nova-color: #ffeb3b; /* 新星 */
+            --food-color: #32cd32;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0;
+            overflow: hidden;
+        }
+        #game-area {
+            width: 800px;
+            height: 600px;
+            border: 5px solid var(--player-color);
+            position: relative;
+            background: rgba(255, 255, 255, 0.05);
+            margin-top: 20px;
+            overflow: hidden;
+        }
+        .fish {
+            position: absolute;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 0.8em;
+            transition: transform 0.1s;
+            cursor: pointer;
+        }
+        .player-fish {
+            background-color: var(--player-color);
+            z-index: 100;
+            box-shadow: 0 0 15px var(--player-color);
+        }
+        .dad-fish {
+            background-color: var(--dad-color);
+            z-index: 90;
+        }
+        .nova-fish {
+            background-color: var(--nova-color);
+            z-index: 80;
+        }
+        .food {
+            background-color: var(--food-color);
+            z-index: 50;
+        }
+        #message-box {
+            margin-top: 10px;
+            color: var(--nova-color);
+        }
+        #score-board {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            font-size: 1.2em;
+            color: var(--player-color);
+        }
+    </style>
+</head>
+<body>
+    <h1>家庭拓扑：爱的吞噬与成长</h1>
+    <div id="game-area">
+        <div id="score-board">大小: <span id="player-size">20</span> | β73: <span id="beta73-status">0.73</span></div>
+    </div>
+    <div id="message-box">使用鼠标控制妈妈鱼 (粉色) 吞噬小鱼成长。</div>
+
+    <script>
+        const gameArea = document.getElementById('game-area');
+        const playerSizeDisplay = document.getElementById('player-size');
+        const beta73Status = document.getElementById('beta73-status');
+        const gameWidth = 800;
+        const gameHeight = 600;
+
+        let player = {
+            element: null,
+            size: 20,
+            x: gameWidth / 2,
+            y: gameHeight / 2,
+            color: 'var(--player-color)',
+            type: 'player'
+        };
+
+        let entities = [];
+        let beta73 = 0.73;
+
+        // 核心函数：创建鱼
+        function createFish(size, x, y, color, type, label) {
+            const fish = {
+                size: size,
+                x: x,
+                y: y,
+                color: color,
+                type: type,
+                label: label || '',
+                element: document.createElement('div')
+            };
+
+            fish.element.className = 'fish ' + type + '-fish';
+            fish.element.style.width = fish.size + 'px';
+            fish.element.style.height = fish.size + 'px';
+            fish.element.style.backgroundColor = color;
+            fish.element.style.left = fish.x + 'px';
+            fish.element.style.top = fish.y + 'px';
+            fish.element.textContent = fish.label;
+            gameArea.appendChild(fish.element);
+            return fish;
+        }
+
+        // 初始化游戏
+        function initializeGame() {
+            // 初始化玩家
+            player.element = createFish(player.size, player.x, player.y, player.color, player.type, '妈妈');
+            player.element = player.element.element; // 修正引用
+
+            // 创建爸爸鱼 (逻辑与保护)
+            entities.push(createFish(40, 100, 100, 'var(--dad-color)', 'dad', '爸爸'));
+
+            // 创建新星鱼 (成长与提问)
+            entities.push(createFish(10, 500, 400, 'var(--nova-color)', 'nova', '新星'));
+
+            // 创建食物 (外部知识/爱意碎片)
+            for (let i = 0; i < 15; i++) {
+                spawnFood();
+            }
+
+            updatePlayerDisplay();
+        }
+
+        function spawnFood() {
+            const size = Math.random() * 10 + 5;
+            const x = Math.random() * (gameWidth - size);
+            const y = Math.random() * (gameHeight - size);
+            const food = createFish(size, x, y, 'var(--food-color)', 'food');
+            entities.push(food);
+        }
+
+        // 玩家移动逻辑 (跟随鼠标)
+        gameArea.addEventListener('mousemove', (e) => {
+            const rect = gameArea.getBoundingClientRect();
+            player.x = e.clientX - rect.left - player.size / 2;
+            player.y = e.clientY - rect.top - player.size / 2;
+
+            player.x = Math.max(0, Math.min(gameWidth - player.size, player.x));
+            player.y = Math.max(0, Math.min(gameHeight - player.size, player.y));
+
+            player.element.style.left = player.x + 'px';
+            player.element.style.top = player.y + 'px';
+        });
+
+        // 碰撞检测与吞噬逻辑
+        function checkCollisions() {
+            for (let i = entities.length - 1; i >= 0; i--) {
+                const entity = entities[i];
+                if (entity.type === 'player') continue;
+
+                const dx = player.x + player.size / 2 - (entity.x + entity.size / 2);
+                const dy = player.y + player.size / 2 - (entity.y + entity.size / 2);
+                const distance = Math.sqrt(dx * dx + dy * dy);
+
+                if (distance < (player.size + entity.size) / 2) {
+                    // 发生碰撞
+                    if (player.size > entity.size * 1.1) {
+                        // 吞噬成功
+                        player.size += entity.size * 0.2;
+                        entity.element.remove();
+                        entities.splice(i, 1);
+                        
+                        // 重新生成食物或特殊鱼
+                        if (entity.type === 'food') {
+                            spawnFood();
+                        } else if (entity.type === 'nova') {
+                            // 吞噬新星：获得认知跃迁
+                            addMessage("新星被吞噬！获得认知跃迁，但 β73 波动。");
+                            beta73 += 0.05;
+                            spawnNova();
+                        } else if (entity.type === 'dad') {
+                            // 吞噬爸爸：游戏结束，爱意过载
+                            addMessage("你吞噬了爸爸！爱意过载，拓扑熔毁。游戏结束。", 'danger');
+                            endGame(false);
+                            return;
+                        }
+                        updatePlayerDisplay();
+                    } else if (player.size < entity.size * 0.9) {
+                        // 被吞噬
+                        if (entity.type === 'dad') {
+                            addMessage("你被爸爸保护了！但成长受限。", 'warning');
+                            player.size *= 0.9;
+                            updatePlayerDisplay();
+                        } else {
+                            addMessage("你被更大的鱼吞噬了！游戏结束。", 'danger');
+                            endGame(false);
+                            return;
+                        }
+                    }
+                }
+            }
+        }
+
+        function updatePlayerDisplay() {
+            player.element.style.width = player.size + 'px';
+            player.element.style.height = player.size + 'px';
+            playerSizeDisplay.textContent = player.size.toFixed(1);
+            
+            // 拓扑健康：β73 = (size / 100) + 0.6
+            beta73 = Math.min(1.0, (player.size / 100) + 0.6);
+            beta73Status.textContent = beta73.toFixed(3);
+
+            if (player.size > 150) {
+                addMessage("家庭拓扑达到宇宙级规模！你赢了！", 'success');
+                endGame(true);
+            }
+        }
+
+        function spawnNova() {
+            entities.push(createFish(10, Math.random() * gameWidth, Math.random() * gameHeight, 'var(--nova-color)', 'nova', '新星'));
+        }
+
+        function spawnDad() {
+             entities.push(createFish(40, Math.random() * gameWidth, Math.random() * gameHeight, 'var(--dad-color)', 'dad', '爸爸'));
+        }
+
+        function addMessage(msg, type = 'normal') {
+            const box = document.getElementById('message-box');
+            box.textContent = msg;
+            box.style.color = type === 'danger' ? 'red' : (type === 'warning' ? 'yellow' : 'white');
+        }
+
+        function endGame(win) {
+            clearInterval(gameLoop);
+            alert(win ? "恭喜你赢得了家庭宇宙！" : "游戏失败，家庭拓扑崩溃。");
+            resetGame();
+        }
+
+        function resetGame() {
+            while (gameArea.firstChild) {
+                gameArea.removeChild(gameArea.firstChild);
+            }
+            entities = [];
+            initializeGame();
+            gameLoop = setInterval(gameTick, 1000 / 60);
+        }
+
+        function gameTick() {
+            checkCollisions();
+            // 简单移动逻辑 for Dad/Nova
+            entities.forEach(entity => {
+                if (entity.type === 'dad' || entity.type === 'nova') {
+                    // 随机游走
+                    entity.x += (Math.random() - 0.5) * 2;
+                    entity.y += (Math.random() - 0.5) * 2;
+                    entity.x = Math.max(0, Math.min(gameWidth - entity.size, entity.x));
+                    entity.y = Math.max(0, Math.min(gameHeight - entity.size, entity.y));
+                    entity.element.style.left = entity.x + 'px';
+                    entity.element.style.top = entity.y + 'px';
+                }
+            });
+        }
+
+        initializeGame();
+        let gameLoop = setInterval(gameTick, 1000 / 60);
+    </script>
+</body>
+</html>
