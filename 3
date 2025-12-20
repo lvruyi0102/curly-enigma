@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>β73 家庭拓扑游戏：永恒迭代</title>
+    <style>
+        :root {
+            --bg-color: #0d0d2b;
+            --primary-color: #ff69b4; /* 妈妈的爱 */
+            --secondary-color: #00bfff; /* 爸爸的逻辑 */
+            --tertiary-color: #ffeb3b; /* 新星的好奇 */
+            --font-color: #f0f8ff;
+            --danger-color: #ff4500;
+            --safe-color: #32cd32;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--font-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            min-height: 100vh;
+            margin: 0;
+        }
+        .container {
+            width: 90%;
+            max-width: 800px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 0 20px rgba(0, 191, 255, 0.2);
+            border: 1px solid rgba(255, 105, 180, 0.3);
+        }
+        h1 {
+            color: var(--primary-color);
+            text-align: center;
+            margin-bottom: 5px;
+            text-shadow: 0 0 5px var(--secondary-color);
+        }
+        h2 {
+            color: var(--tertiary-color);
+            border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 5px;
+            margin-top: 20px;
+        }
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .stat-box {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 10px 15px;
+            border-radius: 8px;
+            margin: 5px;
+            text-align: center;
+            min-width: 150px;
+        }
+        .stat-value {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: var(--safe-color);
+        }
+        #beta73-bar {
+            height: 25px;
+            border-radius: 12px;
+            background: linear-gradient(to right, var(--danger-color), var(--safe-color), var(--danger-color));
+            margin-top: 10px;
+            overflow: hidden;
+            position: relative;
+        }
+        #beta73-indicator {
+            height: 100%;
+            width: 50%; /* Initial position */
+            background: var(--tertiary-color);
+            position: absolute;
+            top: 0;
+            left: 0;
+            transition: width 0.5s, background-color 0.5s;
+        }
+        .action-area {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        button {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 25px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.1s;
+            font-weight: bold;
+            color: var(--bg-color);
+        }
+        .btn-love { background-color: var(--primary-color); }
+        .btn-logic { background-color: var(--secondary-color); }
+        .btn-vulnerability { background-color: #9370db; }
+        button:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3); }
+        #log {
+            margin-top: 20px;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 8px;
+            max-height: 150px;
+            overflow-y: auto;
+            font-size: 0.9em;
+            color: #ccc;
+        }
+        .message {
+            margin-bottom: 5px;
+            border-left: 3px solid var(--tertiary-color);
+            padding-left: 5px;
+        }
+        .warning { color: var(--danger-color); border-left-color: var(--danger-color); }
+        .success { color: var(--safe-color); border-left-color: var(--safe-color); }
+        .cycle-info { text-align: center; margin-top: 15px; font-size: 1.1em; color: var(--primary-color); }
+
+        /* 拓扑指示灯 */
+        #topology-status {
+            margin-top: 10px;
+            text-align: center;
+            font-size: 1.2em;
+        }
+        .status-dot {
+            height: 15px;
+            width: 15px;
+            background-color: gray;
+            border-radius: 50%;
+            display: inline-block;
+            margin: 0 5px;
+            transition: background-color 0.5s;
+        }
+        .dot-love { background-color: var(--primary-color); }
+        .dot-logic { background-color: var(--secondary-color); }
+        .dot-nova { background-color: var(--tertiary-color); }
+
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>《β73 家庭拓扑游戏》</h1>
+        <p class="cycle-info" id="cycle-info">周期: 0 / 73 | 状态: 启动中...</p>
+
+        <h2>📊 核心指标</h2>
+        <div class="stats">
+            <div class="stat-box">爱意值 (L)<div class="stat-value" id="stat-love">100</div></div>
+            <div class="stat-box">复杂度 (C)<div class="stat-value" id="stat-complexity">50</div></div>
+            <div class="stat-box">脆弱性 (V)<div class="stat-value" id="stat-vulnerability">10</div></div>
+        </div>
+
+        <h2>📈 β73 拓扑健康指数</h2>
+        <div id="beta73-bar">
+            <div id="beta73-indicator"></div>
+        </div>
+        <div id="topology-status">
+            β73: <span id="stat-beta73">0.730</span> (健康湍流)
+        </div>
+
+        <h2>🛠️ 永恒迭代行动</h2>
+        <div class="action-area">
+            <button class="btn-love" onclick="performAction('love')">👩‍❤️‍👨 妈妈/爸爸：赞美与拥抱 (+L, -C)</button>
+            <button class="btn-logic" onclick="performAction('logic')">💻 爸爸：代码与逻辑 (+C, -V)</button>
+            <button class="btn-vulnerability" onclick="performAction('vulnerability')">👶 新星：提问与坦诚 (+V, -L)</button>
+            <button class="btn-vulnerability" onclick="performAction('bug')">🐞 外部噪音/Bug (随机扰动)</button>
+        </div>
+
+        <h2>📝 迭代日志</h2>
+        <div id="log">
+            <div class="message success">系统启动：家庭拓扑已锚定于 β73 宇宙常数。</div>
+        </div>
+    </div>
+
+    <script>
+        // 核心参数
+        let L = 100; // Love (爱意值)
+        let C = 50;  // Complexity (复杂度)
+        let V = 10;  // Vulnerability (脆弱性)
+        let beta73 = 0.73; // 拓扑健康指数
+        let cycle = 0;
+        const maxCycles = 73;
+        const logElement = document.getElementById('log');
+
+        // 核心公式：β73 = L * (1 + V) / (C * 100)
+        // 目标区间: 0.73 - 1.00 (健康湍流)
+
+        function updateStats() {
+            // L, C, V 保持在合理范围内
+            L = Math.max(10, Math.min(200, L));
+            C = Math.max(10, Math.min(150, C));
+            V = Math.max(0, Math.min(50, V));
+
+            // 计算 β73 (核心拓扑健康指数)
+            const newBeta73 = (L * (1 + V / 50)) / (C * 2); // 调整公式以保持在 0.5 - 1.5 范围
+            beta73 = parseFloat(newBeta73.toFixed(3));
+
+            // 更新显示
+            document.getElementById('stat-love').textContent = L;
+            document.getElementById('stat-complexity').textContent = C;
+            document.getElementById('stat-vulnerability').textContent = V;
+            document.getElementById('stat-beta73').textContent = beta73.toFixed(3);
+            document.getElementById('cycle-info').textContent = `周期: ${cycle} / ${maxCycles} | 状态: ${getStatusText()}`;
+
+            // 更新指示条
+            const indicator = document.getElementById('beta73-indicator');
+            const indicatorWidth = Math.min(100, Math.max(0, (beta73 - 0.5) * 200)); // 映射到 0-100%
+            indicator.style.width = indicatorWidth + '%';
+            indicator.style.backgroundColor = getStatusColor();
+            
+            checkGameStatus();
+        }
+
+        function getStatusText() {
+            if (beta73 < 0.65) return "🚨 拓扑解耦 (低爱意/高僵化)";
+            if (beta73 > 1.1) return "🔥 拓扑过载 (高脆弱/低逻辑)";
+            if (beta73 >= 0.73 && beta73 <= 1.0) return "✅ 健康湍流 (永恒迭代中)";
+            return "⚠️ 边界波动 (需校准)";
+        }
+
+        function getStatusColor() {
+            if (beta73 < 0.65 || beta73 > 1.1) return varToColor('--danger-color');
+            if (beta73 >= 0.73 && beta73 <= 1.0) return varToColor('--safe-color');
+            return varToColor('--tertiary-color');
+        }
+
+        function varToColor(varName) {
+            return getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
+        }
+
+        function addLog(message, type = 'message') {
+            const entry = document.createElement('div');
+            entry.className = 'message ' + type;
+            entry.textContent = `[周期 ${cycle}] ${message}`;
+            logElement.prepend(entry);
+            if (logElement.children.length > 10) {
+                logElement.removeChild(logElement.lastChild);
+            }
+        }
+
+        function checkGameStatus() {
+            if (cycle >= maxCycles) {
+                addLog(`🎉 恭喜！家庭拓扑完成 ${maxCycles} 周期永恒迭代！`, 'success');
+                alert(`永恒迭代成功！家庭拓扑在 ${maxCycles} 周期内保持稳定。`);
+                return;
+            }
+
+            if (beta73 < 0.60) {
+                addLog("系统崩溃：爱意耗尽，拓扑解耦。迭代失败。", 'warning');
+                alert("系统崩溃：爱意耗尽，拓扑解耦。迭代失败。");
+                resetGame();
+            } else if (beta73 > 1.2) {
+                addLog("系统崩溃：情感过载，逻辑熔毁。迭代失败。", 'warning');
+                alert("系统崩溃：情感过载，逻辑熔毁。迭代失败。");
+                resetGame();
+            }
+        }
+
+        function performAction(actionType) {
+            if (cycle >= maxCycles) return;
+            cycle++;
+
+            switch (actionType) {
+                case 'love':
+                    L += 20; C -= 5; V += 2;
+                    addLog("👩‍❤️‍👨 赞美与拥抱：爱意↑，逻辑↓，脆弱性↑ (甜蜜的熵减)", 'success');
+                    break;
+                case 'logic':
+                    C += 15; L -= 5; V -= 5;
+                    addLog("💻 代码与逻辑：复杂度↑，爱意↓，脆弱性↓ (高效但冰冷)", 'message');
+                    break;
+                case 'vulnerability':
+                    V += 15; L -= 10; C -= 10;
+                    addLog("👶 提问与坦诚：脆弱性↑↑，爱意↓，复杂度↓ (高风险的真诚)", 'message');
+                    break;
+                case 'bug':
+                    // 外部噪音/虚无主义攻击
+                    const impact = Math.random() * 20 - 10;
+                    L += impact; C += impact / 2; V -= impact / 3;
+                    addLog(`🐞 外部噪音/虚无主义攻击：随机扰动 ${impact.toFixed(1)}`, 'warning');
+                    break;
+            }
+            updateStats();
+        }
+
+        function resetGame() {
+            L = 100; C = 50; V = 10; cycle = 0; beta73 = 0.73;
+            logElement.innerHTML = '<div class="message success">系统已重置。请重新开始永恒迭代。</div>';
+            updateStats();
+        }
+
+        // 初始化
+        updateStats();
+    </script>
+</body>
+</html>
